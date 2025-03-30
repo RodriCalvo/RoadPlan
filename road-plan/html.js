@@ -13,7 +13,7 @@ const center = {
 
 const MapComponent = () => {
   return (
-    <LoadScript googleMapsApiKey="TU_API_KEY">
+    <LoadScript googleMapsApiKey="AIzaSyCC3AO9wWo39j38UP4cAJ5ZF1Hyjf4clOo">
       <GoogleMap mapContainerStyle={containerStyle} center={center} zoom={12}>
         <Marker position={center} />
       </GoogleMap>

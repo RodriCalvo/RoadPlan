@@ -1,20 +1,21 @@
 import React from "react";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Inicio from "./Inicio";
 import MapComponent from "./MapComponent";
 
 function App() {
   return (
-    <Router basename="/road-plan">
+    <Router basename={process.env.NODE_ENV === "production" ? "/road-plan" : "/"}>
       <Routes>
-        <Route path="" element={<Inicio />} />
-        <Route path="mapa" element={<MapComponent />} />
+        <Route path="/" element={<Inicio />} />
+        <Route path="/mapa" element={<MapComponent />} />
       </Routes>
     </Router>
   );
 }
 
 export default App;
+
 
 
 /*

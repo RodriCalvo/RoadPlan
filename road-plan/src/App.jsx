@@ -5,7 +5,7 @@ import MapComponent from "./MapComponent";
 
 function App() {
   return (
-    <Router basename={process.env.NODE_ENV === "production" ? "/road-plan" : "/"}>
+    <Router basename="/RoadPlan/">
       <Routes>
         <Route path="/" element={<Inicio />} />
         <Route path="/mapa" element={<MapComponent />} />
@@ -15,8 +15,6 @@ function App() {
 }
 
 export default App;
-
-
 
 /*
   Componente principal, la que renderiza la estructura de la app. Define el flujo entre los componentes.

@@ -3,5 +3,6 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: "/RoadPlan/road-plan/",
+  base: "/RoadPlan/road-plan/"
+
 });

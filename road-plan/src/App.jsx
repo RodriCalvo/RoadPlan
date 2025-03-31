@@ -7,14 +7,15 @@ function App() {
   return (
     <Router basename="/road-plan">
       <Routes>
-        <Route path="/" element={<Inicio />} />
-        <Route path="/mapa" element={<MapComponent />} />
+        <Route path="" element={<Inicio />} />
+        <Route path="mapa" element={<MapComponent />} />
       </Routes>
     </Router>
   );
 }
 
 export default App;
+
 
 /*
   Componente principal, la que renderiza la estructura de la app. Define el flujo entre los componentes.

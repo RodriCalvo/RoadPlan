@@ -5,7 +5,7 @@ import MapComponent from "./MapComponent";
 
 function App() {
   return (
-    <Router>
+    <Router basename="/road-plan">
       <Routes>
         <Route path="/" element={<Inicio />} />
         <Route path="/mapa" element={<MapComponent />} />

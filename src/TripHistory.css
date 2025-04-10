@@ -1,0 +1,33 @@
+.trip-history {
+  min-height: 100vh;
+  background-color: #e8f6ff;
+}
+
+.history-content {
+  padding: 100px 80px 80px;
+}
+
+.trip-history h1 {
+  font-family: 'SF Pro Display', sans-serif;
+  font-size: 2.5rem;
+  color: #2c3e50;
+  text-align: center;
+  margin-bottom: 40px;
+  font-weight: 600;
+}
+
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.empty-state p {
+  font-family: 'SF Pro Display', sans-serif;
+  font-size: 1.2rem;
+  color: #94a3b8;
+} 

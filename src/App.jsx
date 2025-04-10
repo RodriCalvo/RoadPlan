@@ -1,13 +1,16 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
+import Layout from "./Layout";
 import Inicio from "./Inicio";
 import MapComponent from "./MapComponent";
+import TripHistory from "./TripHistory";
 
 function App() {
   return (
     <Routes>
-      <Route index element={<Inicio />} /> 
-      <Route path="/mapa" element={<MapComponent />} />
+      <Route path="/" element={<Layout><Inicio /></Layout>} />
+      <Route path="/mapa" element={<Layout><MapComponent /></Layout>} />
+      <Route path="/historial" element={<Layout><TripHistory /></Layout>} />
     </Routes>
   );
 }

@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import "./Header.css";
 import logo from "/logo.png";
 
@@ -11,12 +12,10 @@ const Header = () => {
       </div>
       <nav className="nav">
         <ul className="nav-list">
-          <li><a href="#inicio">Inicio</a></li>
-          <li><a href="#acerca">Acerca de</a></li>
-          <li><a href="#plataforma">Plataforma</a></li>
-          <li><a href="#colabora">Colaborá</a></li>
-          <li><a href="#difusion">Difusión</a></li>
-          <li><a href="#empresas">Empresas</a></li>
+          <li><Link to="/">Inicio</Link></li>
+          <li><Link to="/mapa">Mapa</Link></li>
+          <li><Link to="/historial">Historial</Link></li>
+          <li><a href="#about">Acerca de</a></li>
           <li><a href="#contacto">Contacto</a></li>
         </ul>
       </nav>

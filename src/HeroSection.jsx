@@ -7,10 +7,15 @@ const HeroSection = () => {
 
   return (
     <section className="hero">
-      <h1 className="hero-title">Empieza tu viaje</h1>
-      <button className="hero-button" onClick={() => navigate("/mapa")}>
-        Iniciar un Viaje
-      </button>
+      <div className="hero-content">
+        <h1 className="hero-title">Planifica tu viaje con RoadPlan</h1>
+        <p className="hero-subtitle">
+          Encuentra la ruta más eficiente, evita el tráfico y llega a tu destino de manera segura.
+        </p>
+        <button className="hero-button" onClick={() => navigate("/mapa")}>
+          Explorar Mapa
+        </button>
+      </div>
     </section>
   );
 };

@@ -1,12 +1,14 @@
 import React from "react";
-import Header from "./Header";
 import HeroSection from "./HeroSection";
+import Services from "./Services";
+import Footer from "./Footer";
 
 const Inicio = () => {
   return (
     <div>
-      <Header />
       <HeroSection />
+      <Services />
+      <Footer />
     </div>
   );
 };

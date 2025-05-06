@@ -60,9 +60,9 @@ const MapComponent = () => {
       alert("Por favor, selecciona tanto el inicio como el destino.");
       return;
     }
-
+  
     const directionsService = new google.maps.DirectionsService();
-
+  
     directionsService.route(
       {
         origin: inicio,
@@ -79,12 +79,38 @@ const MapComponent = () => {
           setPuntosRuta(puntos);
           setIndice(0);
           setPosicionAuto(puntos[0]);
+  
+          // Guardar el historial después de obtener la ruta
+          guardarHistorial();
         } else {
           alert("No se pudo calcular la ruta");
         }
       }
     );
   };
+  
+
+  const guardarHistorial = () => {
+    if (inicio && destino) {
+      const nuevoViaje = {
+        inicio: inicio,
+        destino: destino,
+        fecha: new Date().toISOString(), // Fecha y hora del viaje
+      };
+  
+      // Obtener los historiales existentes del localStorage
+      const historiales = JSON.parse(localStorage.getItem("historiales")) || [];
+  
+      // Agregar el nuevo viaje al historial
+      historiales.push(nuevoViaje);
+  
+      // Guardar el historial actualizado en localStorage
+      localStorage.setItem("historiales", JSON.stringify(historiales));
+    } else {
+      alert("Debe seleccionar un inicio y un destino para el viaje.");
+    }
+  };
+  
 
   // Simulación del movimiento del auto en la ruta
   useEffect(() => {

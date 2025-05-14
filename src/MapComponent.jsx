@@ -25,6 +25,12 @@ const MapComponent = () => {
   const [posicionAuto, setPosicionAuto] = useState(null);
   const [puntosRuta, setPuntosRuta] = useState([]);
   const [indice, setIndice] = useState(0);
+  const [autonomia, setAutonomia] = useState("");
+  const [showPrivacidad, setShowPrivacidad] = useState(false);
+  const [deseaDormir, setDeseaDormir] = useState(null);
+  const [mensajeError, setMensajeError] = useState("");
+  const [totalDistanceKm, setTotalDistanceKm] = useState(null);
+  const [puntosParada, setPuntosParada] = useState([]);
 
   // Obtiene la ubicación actual
   const obtenerUbicacionActual = () => {
@@ -42,6 +48,20 @@ const MapComponent = () => {
     );
   };
 
+  // Nueva función para manejar la petición de ubicación con privacidad
+  const handleUbicacionClick = () => {
+    setShowPrivacidad(true);
+  };
+
+  const handlePermitirUbicacion = () => {
+    setShowPrivacidad(false);
+    obtenerUbicacionActual();
+  };
+
+  const handleCancelarUbicacion = () => {
+    setShowPrivacidad(false);
+  };
+
   // Establecer el destino cuando se hace click en el mapa
   const establecerDestino = (e) => {
     if (!e.latLng) {
@@ -53,6 +73,38 @@ const MapComponent = () => {
       lng: e.latLng.lng(),
     });
   };
+
+  // Función para calcular la distancia entre dos puntos (Haversine)
+  function distanciaEnKm(p1, p2) {
+    const R = 6371; // Radio de la Tierra en km
+    const dLat = (p2.lat - p1.lat) * Math.PI / 180;
+    const dLng = (p2.lng - p1.lng) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(p1.lat * Math.PI / 180) * Math.cos(p2.lat * Math.PI / 180) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  // Lógica para dividir la ruta en segmentos de autonomía
+  function calcularPuntosParada(overviewPath, autonomiaKm) {
+    if (!overviewPath || overviewPath.length === 0 || !autonomiaKm) return [];
+    let puntos = [];
+    let distanciaAcumulada = 0;
+    let ultimoPunto = { lat: overviewPath[0].lat(), lng: overviewPath[0].lng() };
+    for (let i = 1; i < overviewPath.length; i++) {
+      const actual = { lat: overviewPath[i].lat(), lng: overviewPath[i].lng() };
+      const d = distanciaEnKm(ultimoPunto, actual);
+      distanciaAcumulada += d;
+      if (distanciaAcumulada >= autonomiaKm) {
+        puntos.push(actual);
+        distanciaAcumulada = 0;
+      }
+      ultimoPunto = actual;
+    }
+    return puntos;
+  }
 
   // Calcular la ruta óptima considerando tráfico
   const calcularRuta = () => {
@@ -79,7 +131,18 @@ const MapComponent = () => {
           setPuntosRuta(puntos);
           setIndice(0);
           setPosicionAuto(puntos[0]);
-  
+
+          // Calcular la distancia total en km
+          const legs = result.routes[0].legs;
+          const totalMetros = legs.reduce((acc, leg) => acc + leg.distance.value, 0);
+          const totalKm = totalMetros / 1000;
+          setTotalDistanceKm(totalKm);
+
+          // Calcular puntos de parada según autonomía
+          const autonomiaKm = parseFloat(autonomia);
+          const puntosParada = calcularPuntosParada(result.routes[0].overview_path, autonomiaKm);
+          setPuntosParada(puntosParada);
+
           // Guardar el historial después de obtener la ruta
           guardarHistorial();
         } else {
@@ -113,7 +176,7 @@ const MapComponent = () => {
   
 
   // Simulación del movimiento del auto en la ruta
-  useEffect(() => {
+  /*useEffect(() => {
     if (puntosRuta.length > 0 && indice < puntosRuta.length - 1) {
       const interval = setInterval(() => {
         setIndice((prev) => {
@@ -125,44 +188,145 @@ const MapComponent = () => {
 
       return () => clearInterval(interval);
     }
-  }, [puntosRuta, indice]);
+  }, [puntosRuta, indice]);*/
+
+  // Nueva función para manejar el click en Calcular ruta
+  const handleCalcularRuta = () => {
+    if (!destino) {
+      setMensajeError("Por favor, selecciona un destino en el mapa.");
+      setTimeout(() => setMensajeError(""), 2500);
+      return;
+    }
+    calcularRuta();
+  };
 
   return (
     <div className="map-container">
       <Header />
-      <div className="map-controls">
-        <button className="map-button" onClick={obtenerUbicacionActual}>
-          Seleccionar Ubicación Actual
-        </button>
-        <button className="map-button" onClick={() => setDestino(null)}>
-          Seleccionar Destino
-        </button>
-        <button 
-          className="map-button" 
-          onClick={calcularRuta}
-          disabled={!inicio || !destino}
-        >
-          Iniciar Viaje
-        </button>
-      </div>
+      <div className="map-content">
+        <div className="controls-panel">
+          <div className="autonomia-group">
+            <span className="autonomia-label">Autonomía del vehículo</span>
+            <div className="autonomia-input-row">
+              <input
+                type="number"
+                id="autonomia"
+                value={autonomia}
+                onChange={(e) => setAutonomia(e.target.value)}
+                className="autonomia-input"
+                placeholder="0"
+                min="0"
+              />
+              <span className="autonomia-unidad">kms</span>
+            </div>
+          </div>
+          <div className="ubicacion-group">
+            <span className="ubicacion-label">Ubicación actual</span>
+            <div
+              className="ubicacion-caja"
+              onClick={handleUbicacionClick}
+              tabIndex={0}
+              role="button"
+              style={{ cursor: 'pointer' }}
+            >
+              {ubicacionActual
+                ? `${ubicacionActual.lat.toFixed(5)}, ${ubicacionActual.lng.toFixed(5)}`
+                : 'Seleccionar ubicación'}
+            </div>
+          </div>
+          <div className="ubicacion-group">
+            <span className="ubicacion-label">Destino</span>
+            <div
+              className="ubicacion-caja"
+              onClick={() => setDestino(null)}
+              tabIndex={0}
+              role="button"
+              style={{ cursor: 'pointer' }}
+            >
+              {destino
+                ? `${destino.lat.toFixed(5)}, ${destino.lng.toFixed(5)}`
+                : 'Seleccionar destino en el mapa'}
+            </div>
+          </div>
+          <div className="dormir-group">
+            <span className="dormir-label">¿Desea dormir?</span>
+            <div className="dormir-botones-row">
+              <button
+                className={`dormir-btn${deseaDormir === true ? ' selected' : ''}`}
+                onClick={() => setDeseaDormir(true)}
+                type="button"
+              >
+                Sí
+              </button>
+              <button
+                className={`dormir-btn${deseaDormir === false ? ' selected' : ''}`}
+                onClick={() => setDeseaDormir(false)}
+                type="button"
+              >
+                No
+              </button>
+            </div>
+          </div>
+          <button
+            className="calcular-btn"
+            onClick={handleCalcularRuta}
+            disabled={!destino}
+          >
+            Calcular ruta
+          </button>
+          {mensajeError && <div className="mensaje-error">{mensajeError}</div>}
+          {totalDistanceKm && (
+            <div className="distancia-total">
+              Distancia total: {totalDistanceKm.toFixed(1)} km
+            </div>
+          )}
+        </div>
 
-      <LoadScript googleMapsApiKey="AIzaSyCC3AO9wWo39j38UP4cAJ5ZF1Hyjf4clOo">
-        <GoogleMap
-          mapContainerStyle={containerStyle}
-          center={ubicacionActual || center}
-          zoom={12}
-          onLoad={(map) => setMap(map)}
-          onClick={establecerDestino}
-        >
-          {ubicacionActual && <Marker position={ubicacionActual} title="Ubicación Actual" />}
-          {destino && <Marker position={destino} title="Destino" />}
-          {ruta && <DirectionsRenderer directions={ruta} options={{ suppressMarkers: true }} />}
-          {estaciones.map((est, idx) => (
-            <Marker key={idx} position={{ lat: est.lat, lng: est.lng }} title={est.nombre} />
-          ))}
-          {posicionAuto && <Marker position={posicionAuto} title="Auto en Movimiento" />}
-        </GoogleMap>
-      </LoadScript>
+        {/* Modal de privacidad */}
+        {showPrivacidad && (
+          <div className="modal-privacidad-overlay">
+            <div className="modal-privacidad">
+              <h2>Privacidad de tu ubicación</h2>
+              <p>Necesitamos tu ubicación para calcular rutas seguras y confiables.<br />¿Deseas compartir tu ubicación con RoadPlan?</p>
+              <div className="modal-privacidad-botones">
+                <button className="modal-btn permitir" onClick={handlePermitirUbicacion}>Permitir</button>
+                <button className="modal-btn cancelar" onClick={handleCancelarUbicacion}>Cancelar</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Mapa debajo */}
+        <LoadScript googleMapsApiKey="AIzaSyCC3AO9wWo39j38UP4cAJ5ZF1Hyjf4clOo">
+          <GoogleMap
+            mapContainerStyle={containerStyle}
+            center={ubicacionActual || center}
+            zoom={12}
+            onLoad={(map) => setMap(map)}
+            onClick={establecerDestino}
+          >
+            {ubicacionActual && <Marker position={ubicacionActual} title="Ubicación Actual" />}
+            {destino && <Marker position={destino} title="Destino" />}
+            {ruta && <DirectionsRenderer directions={ruta} options={{ suppressMarkers: true }} />}
+            {estaciones.map((est, idx) => (
+              <Marker key={idx} position={{ lat: est.lat, lng: est.lng }} title={est.nombre} />
+            ))}
+            {posicionAuto && <Marker position={posicionAuto} title="Auto en Movimiento" />}
+            {/* Marcadores de puntos de parada */}
+            {puntosParada.map((p, idx) => (
+              <Marker
+                key={`parada-${idx}`}
+                position={p}
+                title={`Parada ${idx + 1}`}
+                icon={{
+                  url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+                  scaledSize: new window.google.maps.Size(40, 40)
+                }}
+              />
+            ))}
+          </GoogleMap>
+        </LoadScript>
+      </div>
     </div>
   );
 };

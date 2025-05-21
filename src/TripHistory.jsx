@@ -47,8 +47,8 @@ const TripHistory = () => {
           <ul>
             {historiales.map((viaje, index) => (
               <li key={index}>
-                <p><strong>Inicio:</strong> {viaje.inicioNombre}</p>
-                <p><strong>Destino:</strong> {viaje.destinoNombre}</p>
+                <p><strong>Inicio:</strong> {viaje.inicio.lat}, {viaje.inicio.lng}</p>
+                <p><strong>Destino:</strong> {viaje.destino.lat}, {viaje.destino.lng}</p>
                 <p><strong>Fecha:</strong> {new Date(viaje.fecha).toLocaleString()}</p>
               </li>
             ))}

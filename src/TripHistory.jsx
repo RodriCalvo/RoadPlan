@@ -16,9 +16,11 @@ async function obtenerDireccion(lat, lng) {
 
 const TripHistory = () => {
   const [historiales, setHistoriales] = useState([]);
+  const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
     async function cargarHistorialConDirecciones() {
+      setCargando(true);
       const historialesGuardados = JSON.parse(localStorage.getItem("historiales")) || [];
 
       const historialesConNombres = await Promise.all(
@@ -30,6 +32,7 @@ const TripHistory = () => {
       );
 
       setHistoriales(historialesConNombres);
+      setCargando(false);
     }
 
     cargarHistorialConDirecciones();
@@ -39,7 +42,11 @@ const TripHistory = () => {
     <div className="trip-history">
       <div className="history-content">
         <h1>Historial de Viajes</h1>
-        {historiales.length === 0 ? (
+        {cargando ? (
+          <div className="empty-state">
+            <p>Cargando historial...</p>
+          </div>
+        ) : historiales.length === 0 ? (
           <div className="empty-state">
             <p>No hay viajes registrados aún.</p>
           </div>
@@ -47,8 +54,9 @@ const TripHistory = () => {
           <ul>
             {historiales.map((viaje, index) => (
               <li key={index}>
-                <p><strong>Inicio:</strong> {viaje.inicio.lat}, {viaje.inicio.lng}</p>
-                <p><strong>Destino:</strong> {viaje.destino.lat}, {viaje.destino.lng}</p>
+                <h3>Viaje #{historiales.length - index}</h3>
+                <p><strong>Inicio:</strong> {viaje.inicioNombre}</p>
+                <p><strong>Destino:</strong> {viaje.destinoNombre}</p>
                 <p><strong>Fecha:</strong> {new Date(viaje.fecha).toLocaleString()}</p>
               </li>
             ))}

@@ -1,14 +1,24 @@
+
+
 .map-container {
-  padding-top: 80px;
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
   height: 100vh;
+  overflow: hidden;
+  z-index: 100;
   background-color: #e8f6ff;
+  padding: 0;
 }
 
 .map-content {
-  position: relative;
-  width: 100%;
-  height: calc(100vh - 80px);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .map-controls {
@@ -52,9 +62,10 @@
 }
 
 .google-map {
-  width: 100%;
-  height: calc(100vh - 80px);
-  margin-top: 80px;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 
 .input-group {
@@ -130,7 +141,7 @@
 
 .controls-panel {
   position: absolute;
-  top: 32px;
+  top: 80px;
   left: 50%;
   transform: translateX(-50%);
   background: #2C4156;
@@ -354,4 +365,19 @@
   border-radius: 8px;
   padding: 6px 16px;
   display: inline-block;
-} 
+}
+
+/* Asegura que el header esté sobre el mapa */
+.header {
+  z-index: 20;
+}
+
+/* Elimina scroll en mobile */
+@media (max-width: 900px) {
+  .controls-panel {
+    min-width: unset;
+    max-width: 98vw;
+    flex-direction: column;
+    padding: 12px 6px;
+  }
+}

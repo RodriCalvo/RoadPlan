@@ -245,7 +245,7 @@ const MapComponent = () => {
             >
               {destino
                 ? `${destino.lat.toFixed(5)}, ${destino.lng.toFixed(5)}`
-                : 'Seleccionar destino en el mapa'}
+                : 'Seleccionar ubicación'}
             </div>
           </div>
           <div className="dormir-group">

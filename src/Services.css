@@ -13,14 +13,18 @@
 }
 
 .services-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 40px;
   max-width: 1200px;
   margin: 0 auto;
+  justify-content: center;
 }
 
 .service-card {
+  flex: 1 1 300px;
+  min-width: 280px;
+  max-width: 380px;
   background-color: #f8f9fa;
   padding: 40px;
   border-radius: 12px;

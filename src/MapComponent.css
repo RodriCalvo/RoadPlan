@@ -1,7 +1,16 @@
 html, body {
   width: 100vw;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  overflow-x: hidden; /* solo oculta scroll horizontal */
+}
+
+.map-container,
+.map-content {
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 .map-container {
@@ -22,6 +31,14 @@ html, body {
   left: 0;
   width: 100vw;
   height: calc(100vh - 80px); /* ocupa todo menos el header */
+  overflow: hidden;
+}
+
+.google-map {
+  width: 100vw;
+  height: 100%;
+  margin: 0;
+  padding: 0;
   overflow: hidden;
 }
 
@@ -63,14 +80,6 @@ html, body {
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
-}
-
-.google-map {
-  width: 100vw;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
 }
 
 .input-group {
@@ -152,16 +161,31 @@ html, body {
   background: #2C4156;
   border-radius: 25px;
   box-shadow: 0 4px 24px rgba(44, 65, 86, 0.15);
-  padding: 18px 20px;
+  padding: 24px 32px;
   max-width: 900px;
-  min-width: 520px;
+  min-width: 320px;
+  width: 90vw;
   min-height: 0;
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  gap: 16px;
+  gap: 24px;
   z-index: 10;
+  transition: box-shadow 0.2s, background 0.2s;
+  box-sizing: border-box;
+}
+
+/* Mejoras para mobile */
+@media (max-width: 900px) {
+  .controls-panel {
+    flex-direction: column;
+    align-items: stretch;
+    max-width: 98vw;
+    min-width: unset;
+    padding: 16px 8px;
+    gap: 16px;
+  }
 }
 
 .ubicacion-label {
@@ -387,9 +411,10 @@ html, body {
   }
 }
 
+/* Botón flotante para mostrar el panel, más abajo del header */
 .show-panel-btn {
   position: absolute;
-  top: 80px; /* Más abajo del header */
+  top: 120px; /* Más abajo del header */
   left: 24px;
   z-index: 30;
   background: #3498db;
@@ -404,4 +429,12 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.panel-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
 }

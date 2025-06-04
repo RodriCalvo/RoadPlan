@@ -32,6 +32,8 @@ const MapComponent = () => {
   const [totalDistanceKm, setTotalDistanceKm] = useState(null);
   const [puntosParada, setPuntosParada] = useState([]);
   const [panelVisible, setPanelVisible] = useState(true);
+  const [nombreUbicacionActual, setNombreUbicacionActual] = useState("");
+  const [nombreDestino, setNombreDestino] = useState("");
 
   // Obtiene la ubicación actual
   const obtenerUbicacionActual = () => {
@@ -202,6 +204,46 @@ const MapComponent = () => {
     setPanelVisible(false); // Oculta el panel al calcular ruta
   };
 
+  // Nueva función para obtener el nombre del lugar
+  const obtenerNombreLugar = (lat, lng, setNombre) => {
+    const geocoder = new window.google.maps.Geocoder();
+    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+      if (status === "OK" && results[0]) {
+        // Extraer solo calle y número
+        const components = results[0].address_components;
+        let street = "";
+        let number = "";
+
+        components.forEach((comp) => {
+          if (comp.types.includes("route")) street = comp.long_name;
+          if (comp.types.includes("street_number")) number = comp.long_name;
+        });
+
+        if (street && number) {
+          setNombre(`${street} ${number}`);
+        } else if (street) {
+          setNombre(street);
+        } else {
+          setNombre(results[0].formatted_address.split(",")[0]); // fallback: primer parte
+        }
+      } else {
+        setNombre(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+      }
+    });
+  };
+
+  useEffect(() => {
+    if (ubicacionActual) {
+      obtenerNombreLugar(ubicacionActual.lat, ubicacionActual.lng, setNombreUbicacionActual);
+    }
+  }, [ubicacionActual]);
+
+  useEffect(() => {
+    if (destino) {
+      obtenerNombreLugar(destino.lat, destino.lng, setNombreDestino);
+    }
+  }, [destino]);
+
   return (
     <div className="map-container">
       <Header />
@@ -233,7 +275,7 @@ const MapComponent = () => {
                 style={{ cursor: 'pointer' }}
               >
                 {ubicacionActual
-                  ? `${ubicacionActual.lat.toFixed(5)}, ${ubicacionActual.lng.toFixed(5)}`
+                  ? nombreUbicacionActual || "Cargando..."
                   : 'Seleccionar ubicación'}
               </div>
             </div>
@@ -247,7 +289,7 @@ const MapComponent = () => {
                 style={{ cursor: 'pointer' }}
               >
                 {destino
-                  ? `${destino.lat.toFixed(5)}, ${destino.lng.toFixed(5)}`
+                  ? nombreDestino || "Cargando..."
                   : 'Seleccionar destino en el mapa'}
               </div>
             </div>
@@ -270,19 +312,21 @@ const MapComponent = () => {
                 </button>
               </div>
             </div>
-            <button
-              className="calcular-btn"
-              onClick={handleCalcularRuta}
-              disabled={!destino}
-            >
-              Calcular ruta
-            </button>
-            {mensajeError && <div className="mensaje-error">{mensajeError}</div>}
-            {totalDistanceKm && (
-              <div className="distancia-total">
-                Distancia total: {totalDistanceKm.toFixed(1)} km
-              </div>
-            )}
+            <div className="panel-actions">
+              <button
+                className="calcular-btn"
+                onClick={handleCalcularRuta}
+                disabled={!destino}
+              >
+                Calcular ruta
+              </button>
+              {mensajeError && <div className="mensaje-error">{mensajeError}</div>}
+              {totalDistanceKm && (
+                <div className="distancia-total">
+                  Distancia total: {totalDistanceKm.toFixed(1)} km
+                </div>
+              )}
+            </div>
           </div>
         )}
         {!panelVisible && (

@@ -1,11 +1,13 @@
 .inicio-container {
-  height: 100vh;
+  min-height: calc(100vh - 80px);
+  padding-top: 80px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #1e3c72, #2a5298);
   position: relative;
+  box-sizing: border-box;
 }
 
 .inicio-container::before {
@@ -59,5 +61,5 @@
 }
 
 
-  
-  
+
+

@@ -414,7 +414,7 @@ html, body {
 /* Botón flotante para mostrar el panel, más abajo del header */
 .show-panel-btn {
   position: absolute;
-  top: 120px; /* Más abajo del header */
+  top: 65px; /* Más arriba respecto al header */
   left: 24px;
   z-index: 30;
   background: #3498db;

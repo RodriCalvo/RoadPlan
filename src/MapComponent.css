@@ -1,4 +1,8 @@
-
+html, body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
 
 .map-container {
   position: fixed;
@@ -14,10 +18,10 @@
 
 .map-content {
   position: absolute;
-  top: 0;
+  top: 80px; /* debajo del header */
   left: 0;
   width: 100vw;
-  height: 100vh;
+  height: calc(100vh - 80px); /* ocupa todo menos el header */
   overflow: hidden;
 }
 
@@ -63,9 +67,10 @@
 
 .google-map {
   width: 100vw;
-  height: 100vh;
+  height: 100%;
   margin: 0;
   padding: 0;
+  overflow: hidden;
 }
 
 .input-group {
@@ -380,4 +385,23 @@
     flex-direction: column;
     padding: 12px 6px;
   }
+}
+
+.show-panel-btn {
+  position: absolute;
+  top: 80px; /* Más abajo del header */
+  left: 24px;
+  z-index: 30;
+  background: #3498db;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  font-size: 28px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(44,65,86,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

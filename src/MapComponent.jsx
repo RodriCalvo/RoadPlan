@@ -5,7 +5,7 @@ import "./MapComponent.css";
 
 const containerStyle = {
   width: "100%",
-  height: "calc(100vh - 80px)",
+  height: "100%", // Cambia esto para que tome el 100% del contenedor .map-content
 };
 
 const center = { lat: -34.6037, lng: -58.3816 }; // Buenos Aires
@@ -31,6 +31,7 @@ const MapComponent = () => {
   const [mensajeError, setMensajeError] = useState("");
   const [totalDistanceKm, setTotalDistanceKm] = useState(null);
   const [puntosParada, setPuntosParada] = useState([]);
+  const [panelVisible, setPanelVisible] = useState(true);
 
   // Obtiene la ubicación actual
   const obtenerUbicacionActual = () => {
@@ -190,7 +191,7 @@ const MapComponent = () => {
     }
   }, [puntosRuta, indice]);*/
 
-  // Nueva función para manejar el click en Calcular ruta
+  // Cambia el botón de calcular ruta para ocultar el panel
   const handleCalcularRuta = () => {
     if (!destino) {
       setMensajeError("Por favor, selecciona un destino en el mapa.");
@@ -198,89 +199,102 @@ const MapComponent = () => {
       return;
     }
     calcularRuta();
+    setPanelVisible(false); // Oculta el panel al calcular ruta
   };
 
   return (
     <div className="map-container">
       <Header />
       <div className="map-content">
-        <div className="controls-panel">
-          <div className="autonomia-group">
-            <span className="autonomia-label">Autonomía del vehículo</span>
-            <div className="autonomia-input-row">
-              <input
-                type="number"
-                id="autonomia"
-                value={autonomia}
-                onChange={(e) => setAutonomia(e.target.value)}
-                className="autonomia-input"
-                placeholder="0"
-                min="0"
-              />
-              <span className="autonomia-unidad">kms</span>
+        {panelVisible && (
+          <div className="controls-panel">
+            <div className="autonomia-group">
+              <span className="autonomia-label">Autonomía del vehículo</span>
+              <div className="autonomia-input-row">
+                <input
+                  type="number"
+                  id="autonomia"
+                  value={autonomia}
+                  onChange={(e) => setAutonomia(e.target.value)}
+                  className="autonomia-input"
+                  placeholder="0"
+                  min="0"
+                />
+                <span className="autonomia-unidad">kms</span>
+              </div>
             </div>
-          </div>
-          <div className="ubicacion-group">
-            <span className="ubicacion-label">Ubicación actual</span>
-            <div
-              className="ubicacion-caja"
-              onClick={handleUbicacionClick}
-              tabIndex={0}
-              role="button"
-              style={{ cursor: 'pointer' }}
-            >
-              {ubicacionActual
-                ? `${ubicacionActual.lat.toFixed(5)}, ${ubicacionActual.lng.toFixed(5)}`
-                : 'Seleccionar ubicación'}
-            </div>
-          </div>
-          <div className="ubicacion-group">
-            <span className="ubicacion-label">Destino</span>
-            <div
-              className="ubicacion-caja"
-              onClick={() => setDestino(null)}
-              tabIndex={0}
-              role="button"
-              style={{ cursor: 'pointer' }}
-            >
-              {destino
-                ? `${destino.lat.toFixed(5)}, ${destino.lng.toFixed(5)}`
-                : 'Seleccionar ubicación'}
-            </div>
-          </div>
-          <div className="dormir-group">
-            <span className="dormir-label">¿Desea dormir?</span>
-            <div className="dormir-botones-row">
-              <button
-                className={`dormir-btn${deseaDormir === true ? ' selected' : ''}`}
-                onClick={() => setDeseaDormir(true)}
-                type="button"
+            <div className="ubicacion-group">
+              <span className="ubicacion-label">Ubicación actual</span>
+              <div
+                className="ubicacion-caja"
+                onClick={handleUbicacionClick}
+                tabIndex={0}
+                role="button"
+                style={{ cursor: 'pointer' }}
               >
-                Sí
-              </button>
-              <button
-                className={`dormir-btn${deseaDormir === false ? ' selected' : ''}`}
-                onClick={() => setDeseaDormir(false)}
-                type="button"
-              >
-                No
-              </button>
+                {ubicacionActual
+                  ? `${ubicacionActual.lat.toFixed(5)}, ${ubicacionActual.lng.toFixed(5)}`
+                  : 'Seleccionar ubicación'}
+              </div>
             </div>
+            <div className="ubicacion-group">
+              <span className="ubicacion-label">Destino</span>
+              <div
+                className="ubicacion-caja"
+                onClick={() => setDestino(null)}
+                tabIndex={0}
+                role="button"
+                style={{ cursor: 'pointer' }}
+              >
+                {destino
+                  ? `${destino.lat.toFixed(5)}, ${destino.lng.toFixed(5)}`
+                  : 'Seleccionar destino en el mapa'}
+              </div>
+            </div>
+            <div className="dormir-group">
+              <span className="dormir-label">¿Desea dormir?</span>
+              <div className="dormir-botones-row">
+                <button
+                  className={`dormir-btn${deseaDormir === true ? ' selected' : ''}`}
+                  onClick={() => setDeseaDormir(true)}
+                  type="button"
+                >
+                  Sí
+                </button>
+                <button
+                  className={`dormir-btn${deseaDormir === false ? ' selected' : ''}`}
+                  onClick={() => setDeseaDormir(false)}
+                  type="button"
+                >
+                  No
+                </button>
+              </div>
+            </div>
+            <button
+              className="calcular-btn"
+              onClick={handleCalcularRuta}
+              disabled={!destino}
+            >
+              Calcular ruta
+            </button>
+            {mensajeError && <div className="mensaje-error">{mensajeError}</div>}
+            {totalDistanceKm && (
+              <div className="distancia-total">
+                Distancia total: {totalDistanceKm.toFixed(1)} km
+              </div>
+            )}
           </div>
+        )}
+        {!panelVisible && (
           <button
-            className="calcular-btn"
-            onClick={handleCalcularRuta}
-            disabled={!destino}
+            className="show-panel-btn"
+            onClick={() => setPanelVisible(true)}
+            aria-label="Mostrar panel"
+            title="Mostrar panel de búsqueda"
           >
-            Calcular ruta
+            &#9776;
           </button>
-          {mensajeError && <div className="mensaje-error">{mensajeError}</div>}
-          {totalDistanceKm && (
-            <div className="distancia-total">
-              Distancia total: {totalDistanceKm.toFixed(1)} km
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Modal de privacidad */}
         {showPrivacidad && (

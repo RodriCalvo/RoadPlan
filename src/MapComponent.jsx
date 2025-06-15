@@ -5,7 +5,8 @@ import "./MapComponent.css";
 
 const containerStyle = {
   width: "100%",
-  height: "100%", // Cambia esto para que tome el 100% del contenedor .map-content
+
+  height: "100vh",
 };
 
 const center = { lat: -34.6037, lng: -58.3816 }; // Buenos Aires
@@ -31,9 +32,7 @@ const MapComponent = () => {
   const [mensajeError, setMensajeError] = useState("");
   const [totalDistanceKm, setTotalDistanceKm] = useState(null);
   const [puntosParada, setPuntosParada] = useState([]);
-  const [panelVisible, setPanelVisible] = useState(true);
-  const [nombreUbicacionActual, setNombreUbicacionActual] = useState("");
-  const [nombreDestino, setNombreDestino] = useState("");
+  const [isPanelExpanded, setIsPanelExpanded] = useState(false);
 
   // Obtiene la ubicación actual
   const obtenerUbicacionActual = () => {
@@ -248,71 +247,79 @@ const MapComponent = () => {
     <div className="map-container">
       <Header />
       <div className="map-content">
-        {panelVisible && (
-          <div className="controls-panel">
-            <div className="autonomia-group">
-              <span className="autonomia-label">Autonomía del vehículo</span>
-              <div className="autonomia-input-row">
-                <input
-                  type="number"
-                  id="autonomia"
-                  value={autonomia}
-                  onChange={(e) => setAutonomia(e.target.value)}
-                  className="autonomia-input"
-                  placeholder="0"
-                  min="0"
-                />
-                <span className="autonomia-unidad">kms</span>
+
+        <div className={`controls-panel ${isPanelExpanded ? "expanded" : "collapsed"}`}>
+          <button 
+            className="panel-toggle-btn" 
+            onClick={() => setIsPanelExpanded(!isPanelExpanded)}
+            aria-label={isPanelExpanded ? "Colapsar panel de controles" : "Expandir panel de controles"}
+          >
+            <span className={`arrow-icon ${isPanelExpanded ? "up" : "down"}`}></span>
+          </button>
+          {isPanelExpanded && (
+            <>
+              <div className="autonomia-group">
+                <span className="autonomia-label">Autonomía del vehículo</span>
+                <div className="autonomia-input-row">
+                  <input
+                    type="number"
+                    id="autonomia"
+                    value={autonomia}
+                    onChange={(e) => setAutonomia(e.target.value)}
+                    className="autonomia-input"
+                    placeholder="0"
+                    min="0"
+                  />
+                  <span className="autonomia-unidad">kms</span>
+                </div>
               </div>
-            </div>
-            <div className="ubicacion-group">
-              <span className="ubicacion-label">Ubicación actual</span>
-              <div
-                className="ubicacion-caja"
-                onClick={handleUbicacionClick}
-                tabIndex={0}
-                role="button"
-                style={{ cursor: 'pointer' }}
-              >
-                {ubicacionActual
-                  ? nombreUbicacionActual || "Cargando..."
-                  : 'Seleccionar ubicación'}
-              </div>
-            </div>
-            <div className="ubicacion-group">
-              <span className="ubicacion-label">Destino</span>
-              <div
-                className="ubicacion-caja"
-                onClick={() => setDestino(null)}
-                tabIndex={0}
-                role="button"
-                style={{ cursor: 'pointer' }}
-              >
-                {destino
-                  ? nombreDestino || "Cargando..."
-                  : 'Seleccionar destino en el mapa'}
-              </div>
-            </div>
-            <div className="dormir-group">
-              <span className="dormir-label">¿Desea dormir?</span>
-              <div className="dormir-botones-row">
-                <button
-                  className={`dormir-btn${deseaDormir === true ? ' selected' : ''}`}
-                  onClick={() => setDeseaDormir(true)}
-                  type="button"
+              <div className="ubicacion-group">
+                <span className="ubicacion-label">Ubicación actual</span>
+                <div
+                  className="ubicacion-caja"
+                  onClick={handleUbicacionClick}
+                  tabIndex={0}
+                  role="button"
+                  style={{ cursor: 'pointer' }}
                 >
-                  Sí
-                </button>
-                <button
-                  className={`dormir-btn${deseaDormir === false ? ' selected' : ''}`}
-                  onClick={() => setDeseaDormir(false)}
-                  type="button"
-                >
-                  No
-                </button>
+                  {ubicacionActual
+                    ? `${ubicacionActual.lat.toFixed(5)}, ${ubicacionActual.lng.toFixed(5)}`
+                    : 'Seleccionar ubicación'}
+                </div>
               </div>
-            </div>
-            <div className="panel-actions">
+              <div className="ubicacion-group">
+                <span className="ubicacion-label">Destino</span>
+                <div
+                  className="ubicacion-caja"
+                  onClick={() => setDestino(null)}
+                  tabIndex={0}
+                  role="button"
+                  style={{ cursor: 'pointer' }}
+                >
+                  {destino
+                    ? `${destino.lat.toFixed(5)}, ${destino.lng.toFixed(5)}`
+                    : 'Seleccionar ubicación'}
+                </div>
+              </div>
+              <div className="dormir-group">
+                <span className="dormir-label">¿Desea dormir?</span>
+                <div className="dormir-botones-row">
+                  <button
+                    className={`dormir-btn${deseaDormir === true ? ' selected' : ''}`}
+                    onClick={() => setDeseaDormir(true)}
+                    type="button"
+                  >
+                    Sí
+                  </button>
+                  <button
+                    className={`dormir-btn${deseaDormir === false ? ' selected' : ''}`}
+                    onClick={() => setDeseaDormir(false)}
+                    type="button"
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
               <button
                 className="calcular-btn"
                 onClick={handleCalcularRuta}
@@ -326,19 +333,9 @@ const MapComponent = () => {
                   Distancia total: {totalDistanceKm.toFixed(1)} km
                 </div>
               )}
-            </div>
-          </div>
-        )}
-        {!panelVisible && (
-          <button
-            className="show-panel-btn"
-            onClick={() => setPanelVisible(true)}
-            aria-label="Mostrar panel"
-            title="Mostrar panel de búsqueda"
-          >
-            &#9776;
-          </button>
-        )}
+            </>
+          )}
+        </div>
 
         {/* Modal de privacidad */}
         {showPrivacidad && (

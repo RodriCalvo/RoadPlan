@@ -444,7 +444,7 @@ html, body {
     flex-direction: column;
     padding: 12px 6px;
     align-items: center;
-    max-width: 200px;
+    min-width: unset;
   }
 }
 

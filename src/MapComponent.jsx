@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { GoogleMap, LoadScript, Marker, DirectionsService, DirectionsRenderer } from "@react-google-maps/api";
+import { GoogleMap, LoadScript, DirectionsRenderer, InfoWindow } from "@react-google-maps/api";
 import Header from "./Header";
 import "./MapComponent.css";
 
 const containerStyle = {
   width: "100%",
-
   height: "100vh",
 };
 
@@ -16,6 +15,8 @@ const estaciones = [
   { nombre: "YPF", lat: -35.0, lng: -58.9 },
   { nombre: "Axion", lat: -34.7, lng: -58.8 },
 ];
+
+const GOOGLE_MAP_LIBRARIES = ["places"];
 
 const MapComponent = () => {
   const [map, setMap] = useState(null);
@@ -33,6 +34,108 @@ const MapComponent = () => {
   const [totalDistanceKm, setTotalDistanceKm] = useState(null);
   const [puntosParada, setPuntosParada] = useState([]);
   const [isPanelExpanded, setIsPanelExpanded] = useState(false);
+  const [nombreUbicacionActual, setNombreUbicacionActual] = useState("");
+  const [nombreDestino, setNombreDestino] = useState("");
+  const [estacionesCercanas, setEstacionesCercanas] = useState([]);
+  const [estacionSeleccionada, setEstacionSeleccionada] = useState(null);
+
+  // Limpia los marcadores clásicos anteriores
+  useEffect(() => {
+    if (!map || !window.google) return;
+
+    // Limpia marcadores previos
+    if (window.markers) window.markers.forEach(marker => marker.setMap(null));
+    window.markers = [];
+
+    // Ubicación actual (azul)
+    if (ubicacionActual) {
+      const marker = new window.google.maps.Marker({
+        map,
+        position: ubicacionActual,
+        title: "Ubicación Actual",
+        icon: {
+          url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+        }
+      });
+      window.markers.push(marker);
+    }
+
+    // Destino (rojo)
+    if (destino) {
+      const marker = new window.google.maps.Marker({
+        map,
+        position: destino,
+        title: "Destino",
+        icon: {
+          url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
+        }
+      });
+      window.markers.push(marker);
+    }
+
+    // Estaciones fijas (violeta)
+    estaciones.forEach((est) => {
+      const marker = new window.google.maps.Marker({
+        map,
+        position: { lat: est.lat, lng: est.lng },
+        title: est.nombre,
+        icon: {
+          url: "http://maps.google.com/mapfiles/ms/icons/purple-dot.png"
+        }
+      });
+      window.markers.push(marker);
+    });
+
+    // Auto en movimiento (amarillo)
+    if (posicionAuto) {
+      const marker = new window.google.maps.Marker({
+        map,
+        position: posicionAuto,
+        title: "Auto en Movimiento",
+        icon: {
+          url: "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png"
+        }
+      });
+      window.markers.push(marker);
+    }
+
+    // Puntos de parada (azul claro)
+    puntosParada.forEach((p, idx) => {
+      const marker = new window.google.maps.Marker({
+        map,
+        position: p,
+        title: `Parada ${idx + 1}`,
+        icon: {
+          url: "http://maps.google.com/mapfiles/ms/icons/ltblue-dot.png"
+        }
+      });
+      window.markers.push(marker);
+    });
+
+    // Estaciones cercanas encontradas por Places (verde)
+    estacionesCercanas.forEach((est, idx) => {
+      const marker = new window.google.maps.Marker({
+        map,
+        position: est.location,
+        title: est.displayName,
+        icon: {
+          url: "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
+        }
+      });
+      marker.addListener("click", () => {
+        // Convierte location a objeto plano si es LatLng
+        let loc = est.location;
+        if (typeof loc.lat === "function" && typeof loc.lng === "function") {
+          loc = { lat: loc.lat(), lng: loc.lng() };
+        }
+        setEstacionSeleccionada({ ...est, location: loc, idx });
+        map.panTo(loc);
+        map.setZoom(16);
+      });
+      window.markers.push(marker);
+    });
+
+  }, [map, ubicacionActual, destino, posicionAuto, puntosParada, estacionesCercanas]);
 
   // Obtiene la ubicación actual
   const obtenerUbicacionActual = () => {
@@ -46,7 +149,8 @@ const MapComponent = () => {
         setInicio(nuevaUbicacion);
         setPosicionAuto(nuevaUbicacion);
       },
-      () => alert("No se pudo obtener la ubicación")
+      () => alert("No se pudo obtener la ubicación"),
+      { enableHighAccuracy: true }
     );
   };
 
@@ -115,13 +219,13 @@ const MapComponent = () => {
       return;
     }
   
-    const directionsService = new google.maps.DirectionsService();
+    const directionsService = new window.google.maps.DirectionsService();
   
     directionsService.route(
       {
         origin: inicio,
         destination: destino,
-        travelMode: google.maps.TravelMode.DRIVING,
+        travelMode: window.google.maps.TravelMode.DRIVING,
       },
       (result, status) => {
         if (status === "OK") {
@@ -143,7 +247,11 @@ const MapComponent = () => {
           // Calcular puntos de parada según autonomía
           const autonomiaKm = parseFloat(autonomia);
           const puntosParada = calcularPuntosParada(result.routes[0].overview_path, autonomiaKm);
-          setPuntosParada(puntosParada);
+          const puntosParadaConNombre = puntosParada.map((p, idx) => ({
+            ...p,
+            nombre: `Parada ${idx + 1}`
+          }));
+          setPuntosParada(puntosParadaConNombre);
 
           // Guardar el historial después de obtener la ruta
           guardarHistorial();
@@ -154,45 +262,23 @@ const MapComponent = () => {
     );
   };
   
-
   const guardarHistorial = () => {
     if (inicio && destino) {
       const nuevoViaje = {
         inicio: inicio,
         destino: destino,
-        fecha: new Date().toISOString(), // Fecha y hora del viaje
+        fecha: new Date().toISOString(),
       };
-  
-      // Obtener los historiales existentes del localStorage
       const historiales = JSON.parse(localStorage.getItem("historiales")) || [];
-  
-      // Agregar el nuevo viaje al historial
       historiales.push(nuevoViaje);
-  
-      // Guardar el historial actualizado en localStorage
       localStorage.setItem("historiales", JSON.stringify(historiales));
     } else {
       alert("Debe seleccionar un inicio y un destino para el viaje.");
     }
   };
-  
-
-  // Simulación del movimiento del auto en la ruta
-  /*useEffect(() => {
-    if (puntosRuta.length > 0 && indice < puntosRuta.length - 1) {
-      const interval = setInterval(() => {
-        setIndice((prev) => {
-          const nextIndex = prev + 1;
-          setPosicionAuto(puntosRuta[nextIndex]);
-          return nextIndex;
-        });
-      }, 500);
-
-      return () => clearInterval(interval);
-    }
-  }, [puntosRuta, indice]);*/
 
   // Cambia el botón de calcular ruta para ocultar el panel
+  const [panelVisible, setPanelVisible] = useState(true);
   const handleCalcularRuta = () => {
     if (!destino) {
       setMensajeError("Por favor, selecciona un destino en el mapa.");
@@ -200,7 +286,7 @@ const MapComponent = () => {
       return;
     }
     calcularRuta();
-    setPanelVisible(false); // Oculta el panel al calcular ruta
+    setPanelVisible(false);
   };
 
   // Nueva función para obtener el nombre del lugar
@@ -223,7 +309,7 @@ const MapComponent = () => {
         } else if (street) {
           setNombre(street);
         } else {
-          setNombre(results[0].formatted_address.split(",")[0]); // fallback: primer parte
+          setNombre(results[0].formatted_address.split(",")[0]);
         }
       } else {
         setNombre(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
@@ -243,10 +329,49 @@ const MapComponent = () => {
     }
   }, [destino]);
 
+  useEffect(() => {
+    if (map && ubicacionActual) {
+      map.panTo(ubicacionActual);
+      map.setZoom(15); // Puedes ajustar el zoom si lo deseas
+    }
+  }, [map, ubicacionActual]);
+
+  useEffect(() => {
+    if (!window.google || !puntosParada.length) return;
+
+    async function buscarTodas() {
+      let todas = [];
+      for (const punto of puntosParada) {
+        const results = await buscarEstacionesCercanas(punto);
+        todas = todas.concat(results);
+      }
+      setEstacionesCercanas(todas);
+    }
+
+    buscarTodas();
+  }, [puntosParada]);
+
   return (
     <div className="map-container">
       <Header />
       <div className="map-content">
+
+        {/* Barra de Origen → Paradas → Destino */}
+        <div className="origen-destino-bar" style={{margin: "16px 0", background: "#f8f8f8", padding: "8px 12px", borderRadius: "8px", display: "flex", alignItems: "center", gap: "16px"}}>
+          <div><strong>Origen:</strong> {nombreUbicacionActual || (ubicacionActual ? `${ubicacionActual.lat.toFixed(5)}, ${ubicacionActual.lng.toFixed(5)}` : "No seleccionado")}</div>
+          {puntosParada.length > 0 && (
+            <>
+              <span style={{fontWeight: "bold", margin: "0 8px"}}>→</span>
+              {puntosParada.map((p, idx) => (
+                <span key={idx} style={{background: "#e0f7fa", borderRadius: "6px", padding: "2px 8px", margin: "0 4px"}}>
+                  {p.nombre || `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`}
+                </span>
+              ))}
+            </>
+          )}
+          <span style={{fontWeight: "bold", margin: "0 8px"}}>→</span>
+          <div><strong>Destino:</strong> {nombreDestino || (destino ? `${destino.lat.toFixed(5)}, ${destino.lng.toFixed(5)}` : "No seleccionado")}</div>
+        </div>
 
         <div className={`controls-panel ${isPanelExpanded ? "expanded" : "collapsed"}`}>
           <button 
@@ -260,7 +385,7 @@ const MapComponent = () => {
             <>
               <div className="autonomia-group">
                 <span className="autonomia-label">Autonomía del vehículo</span>
-                <div className="autonomia-input-row">
+                <div className="autonomía-input-row">
                   <input
                     type="number"
                     id="autonomia"
@@ -283,7 +408,7 @@ const MapComponent = () => {
                   style={{ cursor: 'pointer' }}
                 >
                   {ubicacionActual
-                    ? `${ubicacionActual.lat.toFixed(5)}, ${ubicacionActual.lng.toFixed(5)}`
+                    ? nombreUbicacionActual || `${ubicacionActual.lat.toFixed(5)}, ${ubicacionActual.lng.toFixed(5)}`
                     : 'Seleccionar ubicación'}
                 </div>
               </div>
@@ -297,7 +422,7 @@ const MapComponent = () => {
                   style={{ cursor: 'pointer' }}
                 >
                   {destino
-                    ? `${destino.lat.toFixed(5)}, ${destino.lng.toFixed(5)}`
+                    ? nombreDestino || `${destino.lat.toFixed(5)}, ${destino.lng.toFixed(5)}`
                     : 'Seleccionar ubicación'}
                 </div>
               </div>
@@ -352,33 +477,57 @@ const MapComponent = () => {
         )}
 
         {/* Mapa debajo */}
-        <LoadScript googleMapsApiKey="AIzaSyCC3AO9wWo39j38UP4cAJ5ZF1Hyjf4clOo">
+        <LoadScript
+          googleMapsApiKey="AIzaSyCC3AO9wWo39j38UP4cAJ5ZF1Hyjf4clOo"
+          libraries={GOOGLE_MAP_LIBRARIES}
+        >
           <GoogleMap
             mapContainerStyle={containerStyle}
             center={ubicacionActual || center}
             zoom={12}
-            onLoad={(map) => setMap(map)}
+            onLoad={(mapInstance) => setMap(mapInstance)}
             onClick={establecerDestino}
           >
-            {ubicacionActual && <Marker position={ubicacionActual} title="Ubicación Actual" />}
-            {destino && <Marker position={destino} title="Destino" />}
             {ruta && <DirectionsRenderer directions={ruta} options={{ suppressMarkers: true }} />}
-            {estaciones.map((est, idx) => (
-              <Marker key={idx} position={{ lat: est.lat, lng: est.lng }} title={est.nombre} />
-            ))}
-            {posicionAuto && <Marker position={posicionAuto} title="Auto en Movimiento" />}
-            {/* Marcadores de puntos de parada */}
-            {puntosParada.map((p, idx) => (
-              <Marker
-                key={`parada-${idx}`}
-                position={p}
-                title={`Parada ${idx + 1}`}
-                icon={{
-                  url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-                  scaledSize: new window.google.maps.Size(40, 40)
-                }}
-              />
-            ))}
+            {estacionSeleccionada && estacionSeleccionada.location && (
+              <InfoWindow
+                position={estacionSeleccionada.location}
+                onCloseClick={() => setEstacionSeleccionada(null)}
+              >
+                <div>
+                  <strong>{estacionSeleccionada.displayName}</strong>
+                  <br />
+                  <button
+                    style={{marginTop: 6, fontSize: 13, padding: "4px 8px"}}
+                    onClick={() => {
+                      setPuntosParada(prev => {
+                        // Busca la parada más cercana a la estación seleccionada
+                        let minIdx = 0;
+                        let minDist = Infinity;
+                        prev.forEach((p, idx) => {
+                          const d = Math.abs(p.lat - estacionSeleccionada.location.lat) + Math.abs(p.lng - estacionSeleccionada.location.lng);
+                          if (d < minDist) {
+                            minDist = d;
+                            minIdx = idx;
+                          }
+                        });
+                        // Reemplaza esa parada por la estación seleccionada (con nombre)
+                        const nuevo = [...prev];
+                        nuevo[minIdx] = {
+                          lat: estacionSeleccionada.location.lat,
+                          lng: estacionSeleccionada.location.lng,
+                          nombre: estacionSeleccionada.displayName
+                        };
+                        return nuevo;
+                      });
+                      setEstacionSeleccionada(null);
+                    }}
+                  >
+                    Agregar parada de la estación de servicio
+                  </button>
+                </div>
+              </InfoWindow>
+            )}
           </GoogleMap>
         </LoadScript>
       </div>
@@ -387,3 +536,22 @@ const MapComponent = () => {
 };
 
 export default MapComponent;
+
+// Buscar estaciones cercanas usando la nueva API de Places
+async function buscarEstacionesCercanas(punto, radio = 5000) {
+  const { Place, SearchNearbyRankPreference } = await window.google.maps.importLibrary("places");
+  const request = {
+    fields: ["displayName", "location", "businessStatus"],
+    locationRestriction: {
+      center: punto,
+      radius: radio,
+    },
+    includedPrimaryTypes: ["gas_station"],
+    maxResultCount: 5,
+    rankPreference: SearchNearbyRankPreference.POPULARITY,
+    language: "es-419",
+    region: "ar",
+  };
+  const { places } = await Place.searchNearby(request);
+  return places || [];
+}

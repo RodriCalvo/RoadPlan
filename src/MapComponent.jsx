@@ -38,6 +38,7 @@ const MapComponent = () => {
   const [nombreDestino, setNombreDestino] = useState("");
   const [estacionesCercanas, setEstacionesCercanas] = useState([]);
   const [estacionSeleccionada, setEstacionSeleccionada] = useState(null);
+  const [hospedajesCercanos, setHospedajesCercanos] = useState([]);
 
   // Limpia los marcadores clásicos anteriores
   useEffect(() => {
@@ -117,13 +118,15 @@ const MapComponent = () => {
       const marker = new window.google.maps.Marker({
         map,
         position: est.location,
-        title: est.displayName,
+        title:
+          (est.displayName && typeof est.displayName === "object" && est.displayName.text) ||
+          (typeof est.displayName === "string" && est.displayName) ||
+          "Estación de servicio",
         icon: {
           url: "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
         }
       });
       marker.addListener("click", () => {
-        // Convierte location a objeto plano si es LatLng
         let loc = est.location;
         if (typeof loc.lat === "function" && typeof loc.lng === "function") {
           loc = { lat: loc.lat(), lng: loc.lng() };
@@ -135,7 +138,32 @@ const MapComponent = () => {
       window.markers.push(marker);
     });
 
-  }, [map, ubicacionActual, destino, posicionAuto, puntosParada, estacionesCercanas]);
+    // Hospedajes cercanos encontrados por Places (naranja)
+    hospedajesCercanos.forEach((hosp, idx) => {
+      const marker = new window.google.maps.Marker({
+        map,
+        position: hosp.location,
+        title: hosp.name ||
+          (hosp.displayName && hosp.displayName.text) ||
+          (typeof hosp.displayName === "string" && hosp.displayName) ||
+          "Hospedaje",
+        icon: {
+          url: "http://maps.google.com/mapfiles/ms/icons/orange-dot.png"
+        }
+      });
+      marker.addListener("click", () => {
+        let loc = hosp.location;
+        if (typeof loc.lat === "function" && typeof loc.lng === "function") {
+          loc = { lat: loc.lat(), lng: loc.lng() };
+        }
+        setEstacionSeleccionada({ ...hosp, location: loc, idx, esHospedaje: true });
+        map.panTo(loc);
+        map.setZoom(16);
+      });
+      window.markers.push(marker);
+    });
+
+  }, [map, ubicacionActual, destino, posicionAuto, puntosParada, estacionesCercanas, hospedajesCercanos]);
 
   // Obtiene la ubicación actual
   const obtenerUbicacionActual = () => {
@@ -351,6 +379,24 @@ const MapComponent = () => {
     buscarTodas();
   }, [puntosParada]);
 
+  useEffect(() => {
+    if (!deseaDormir || !window.google || !puntosParada.length) {
+      setHospedajesCercanos([]);
+      return;
+    }
+
+    async function buscarTodosHospedajes() {
+      let todos = [];
+      for (const punto of puntosParada) {
+        const results = await buscarLugaresCercanos(punto, "lodging", 8000);
+        todos = todos.concat(results);
+      }
+      setHospedajesCercanos(todos);
+    }
+
+    buscarTodosHospedajes();
+  }, [deseaDormir, puntosParada]);
+
   return (
     <div className="map-container">
       <Header />
@@ -495,13 +541,44 @@ const MapComponent = () => {
                 onCloseClick={() => setEstacionSeleccionada(null)}
               >
                 <div>
-                  <strong>{estacionSeleccionada.displayName}</strong>
-                  <br />
+                  <strong>
+                    {estacionSeleccionada.name ||
+                     (estacionSeleccionada.displayName && estacionSeleccionada.displayName.text) ||
+                     (typeof estacionSeleccionada.displayName === "string" && estacionSeleccionada.displayName) ||
+                     (estacionSeleccionada.esHospedaje ? "Hospedaje" : "Estación de servicio")}
+                  </strong>
+                  {estacionSeleccionada.displayName && (
+                    <div style={{fontSize: 13, color: "#444"}}>
+                      {typeof estacionSeleccionada.displayName === "object"
+                        ? estacionSeleccionada.displayName.text
+                        : estacionSeleccionada.displayName}
+                    </div>
+                  )}
+                  {estacionSeleccionada.businessStatus && (
+                    <div style={{fontSize: 12, color: "#888"}}>
+                      Estado: {estacionSeleccionada.businessStatus}
+                    </div>
+                  )}
                   <button
                     style={{marginTop: 6, fontSize: 13, padding: "4px 8px"}}
                     onClick={() => {
                       setPuntosParada(prev => {
-                        // Busca la parada más cercana a la estación seleccionada
+                        const nombreLugar =
+                          (estacionSeleccionada.displayName && typeof estacionSeleccionada.displayName === "object" && estacionSeleccionada.displayName.text) ||
+                          (typeof estacionSeleccionada.displayName === "string" && estacionSeleccionada.displayName) ||
+                          (estacionSeleccionada.esHospedaje ? "Hospedaje" : "Estación de servicio");
+                        // Si es hospedaje, agregalo al final
+                        if (estacionSeleccionada.esHospedaje) {
+                          return [
+                            ...prev,
+                            {
+                              lat: estacionSeleccionada.location.lat,
+                              lng: estacionSeleccionada.location.lng,
+                              nombre: nombreLugar
+                            }
+                          ];
+                        }
+                        // Si es estación, reemplaza la más cercana
                         let minIdx = 0;
                         let minDist = Infinity;
                         prev.forEach((p, idx) => {
@@ -511,19 +588,18 @@ const MapComponent = () => {
                             minIdx = idx;
                           }
                         });
-                        // Reemplaza esa parada por la estación seleccionada (con nombre)
                         const nuevo = [...prev];
                         nuevo[minIdx] = {
                           lat: estacionSeleccionada.location.lat,
                           lng: estacionSeleccionada.location.lng,
-                          nombre: estacionSeleccionada.displayName
+                          nombre: nombreLugar
                         };
                         return nuevo;
                       });
                       setEstacionSeleccionada(null);
                     }}
                   >
-                    Agregar parada de la estación de servicio
+                    Agregar parada de {estacionSeleccionada.esHospedaje ? "hospedaje" : "la estación de servicio"}
                   </button>
                 </div>
               </InfoWindow>
@@ -538,7 +614,26 @@ const MapComponent = () => {
 export default MapComponent;
 
 // Buscar estaciones cercanas usando la nueva API de Places
-async function buscarEstacionesCercanas(punto, radio = 5000) {
+async function buscarLugaresCercanos(punto, tipo = "gas_station", radio = 5000) {
+  const { Place, SearchNearbyRankPreference } = await window.google.maps.importLibrary("places");
+  const request = {
+    fields: ["displayName", "location", "businessStatus"], // <-- corregido
+    locationRestriction: {
+      center: punto,
+      radius: radio,
+    },
+    includedPrimaryTypes: [tipo],
+    maxResultCount: 5,
+    rankPreference: SearchNearbyRankPreference.POPULARITY,
+    language: "es-419",
+    region: "ar",
+  };
+  const { places } = await Place.searchNearby(request);
+  return places || [];
+}
+
+// Buscar estaciones cercanas usando la nueva API de Places
+async function buscarEstacionesCercanas(punto, radio = 30000) {
   const { Place, SearchNearbyRankPreference } = await window.google.maps.importLibrary("places");
   const request = {
     fields: ["displayName", "location", "businessStatus"],

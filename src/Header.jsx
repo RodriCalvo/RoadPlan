@@ -16,6 +16,26 @@ const Header = () => {
   const panelRef = useRef(null);
   const navigate = useNavigate();
 
+  // Función para scroll suave a un id
+  const scrollToSection = (id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // Handler para los enlaces especiales
+  const handleNavClick = (e, id) => {
+    e.preventDefault();
+    if (window.location.pathname === "/") {
+      scrollToSection(id);
+    } else {
+      navigate("/", { replace: false });
+      setTimeout(() => scrollToSection(id), 100);
+    }
+    setMenuOpen(false);
+  };
+
   // Cerrar menú al hacer click fuera
   useEffect(() => {
     if (!menuOpen) return;
@@ -31,18 +51,18 @@ const Header = () => {
   return (
     <header className="header">
       <div className="header-left">
-        <Link to="/" className="logo-link">
+        <a href="#top" className="logo-link" onClick={e => handleNavClick(e, "top") }>
           <img src={logo} alt="Logo" className="logo" />
           <span className="logo-text">RoadPlan</span>
-        </Link>
+        </a>
       </div>
       <div className="header-right">
         <nav className="nav-links">
-          {links.map((link) => (
-            <Link key={link.label} to={link.to} className="nav-link">
-              {link.label}
-            </Link>
-          ))}
+          <a href="#top" className="nav-link" onClick={e => handleNavClick(e, "top")}>Inicio</a>
+          <Link to="/mapa" className="nav-link">Mapa</Link>
+          <Link to="/historial" className="nav-link">Historial</Link>
+          <a href="#about" className="nav-link" onClick={e => handleNavClick(e, "about")}>Acerca de</a>
+          <a href="#contacto" className="nav-link" onClick={e => handleNavClick(e, "contacto")}>Contacto</a>
         </nav>
         <button
           className={`menu-toggle${menuOpen ? " open" : ""}`}
@@ -57,16 +77,11 @@ const Header = () => {
       {/* Panel lateral */}
       <div className={`side-panel${menuOpen ? " open" : ""}`} ref={panelRef}>
         <nav className="side-nav">
-          {links.map((link) => (
-            <Link
-              key={link.label}
-              to={link.to}
-              className="side-link"
-              onClick={() => setMenuOpen(false)}
-            >
-              {link.label}
-            </Link>
-          ))}
+          <Link to="/" className="side-link" onClick={() => setMenuOpen(false)}>Inicio</Link>
+          <Link to="/mapa" className="side-link" onClick={() => setMenuOpen(false)}>Mapa</Link>
+          <Link to="/historial" className="side-link" onClick={() => setMenuOpen(false)}>Historial</Link>
+          <a href="#about" className="side-link" onClick={e => handleNavClick(e, "about")}>Acerca de</a>
+          <a href="#contacto" className="side-link" onClick={e => handleNavClick(e, "contacto")}>Contacto</a>
         </nav>
       </div>
       {/* Fondo oscuro al abrir menú */}

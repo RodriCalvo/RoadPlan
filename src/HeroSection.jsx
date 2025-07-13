@@ -6,7 +6,7 @@ const HeroSection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="hero">
+    <section className="hero" id="top">
       <div className="hero-content">
         <h1 className="hero-title">Planifica tu viaje con RoadPlan</h1>
         <p className="hero-subtitle">

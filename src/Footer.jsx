@@ -35,7 +35,7 @@ const Footer = () => {
           <p>No dudes en contactarnos.</p>
         </div>
         <div className="footer-top-image-box">
-          <img src="/RoadTrip.webp" alt="Road Trip" className="footer-top-image" />
+          <img src="./public/RoadTrip.webp" alt="Road Trip" className="footer-top-image" />
         </div>
       </div>
       <div className="contact-section" id="contacto">

@@ -27,6 +27,8 @@ const Footer = () => {
     });
   };
 
+  const roadTripImg = import.meta.env.BASE_URL + 'RoadTrip.webp';
+
   return (
     <footer className="footer">
       <div className="footer-top-section" id="about">
@@ -35,7 +37,7 @@ const Footer = () => {
           <p>No dudes en contactarnos.</p>
         </div>
         <div className="footer-top-image-box">
-          <img src="./public/RoadTrip.webp" alt="Road Trip" className="footer-top-image" />
+          <img src={roadTripImg} alt="Road Trip" className="footer-top-image" />
         </div>
       </div>
       <div className="contact-section" id="contacto">

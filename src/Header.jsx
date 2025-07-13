@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import logo from "/logo.png";
+import logo from "/logo.webp";
 import "./Header.css";
 
 const links = [

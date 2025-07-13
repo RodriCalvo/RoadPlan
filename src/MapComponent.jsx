@@ -75,7 +75,7 @@ const MapComponent = () => {
     }
 
     // Estaciones fijas (violeta)
-    estaciones.forEach((est) => {
+    /*estaciones.forEach((est) => {
       const marker = new window.google.maps.Marker({
         map,
         position: { lat: est.lat, lng: est.lng },
@@ -85,7 +85,7 @@ const MapComponent = () => {
         }
       });
       window.markers.push(marker);
-    });
+    });*/
 
     // Auto en movimiento (amarillo)
     if (posicionAuto) {
@@ -403,21 +403,24 @@ const MapComponent = () => {
       <div className="map-content">
 
         {/* Barra de Origen → Paradas → Destino */}
-        <div className="origen-destino-bar" style={{margin: "16px 0", background: "#f8f8f8", padding: "8px 12px", borderRadius: "8px", display: "flex", alignItems: "center", gap: "16px"}}>
-          <div><strong>Origen:</strong> {nombreUbicacionActual || (ubicacionActual ? `${ubicacionActual.lat.toFixed(5)}, ${ubicacionActual.lng.toFixed(5)}` : "No seleccionado")}</div>
-          {puntosParada.length > 0 && (
-            <>
-              <span style={{fontWeight: "bold", margin: "0 8px"}}>→</span>
-              {puntosParada.map((p, idx) => (
-                <span key={idx} style={{background: "#e0f7fa", borderRadius: "6px", padding: "2px 8px", margin: "0 4px"}}>
-                  {p.nombre || `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`}
-                </span>
-              ))}
-            </>
-          )}
-          <span style={{fontWeight: "bold", margin: "0 8px"}}>→</span>
-          <div><strong>Destino:</strong> {nombreDestino || (destino ? `${destino.lat.toFixed(5)}, ${destino.lng.toFixed(5)}` : "No seleccionado")}</div>
-        </div>
+        <div className="origen-destino-bar">
+  <span className="origen-destino-label">Origen:</span>
+  <span>{nombreUbicacionActual || (ubicacionActual ? `${ubicacionActual.lat.toFixed(5)}, ${ubicacionActual.lng.toFixed(5)}` : "No seleccionado")}</span>
+  <span className="flecha-viaje">→</span>
+  {/* Paradas de autonomía */}
+  {puntosParada.filter(p => !p.esHospedaje).map((p, idx) => (
+    <span key={idx} className="parada-chip">
+      {p.nombre || `Parada ${idx + 1}`}
+    </span>
+  ))}
+  {/* Paradas de hospedaje */}
+  {puntosParada.filter(p => p.esHospedaje).map((p, idx) => (
+    <span key={`hosp-${idx}`} className="parada-chip hospedaje-chip">{p.nombre || "Hospedaje"}</span>
+  ))}
+  <span className="flecha-viaje">→</span>
+  <span className="origen-destino-label">Destino:</span>
+  <span>{nombreDestino || (destino ? `${destino.lat.toFixed(5)}, ${destino.lng.toFixed(5)}` : "No seleccionado")}</span>
+</div>
 
         <div className={`controls-panel ${isPanelExpanded ? "expanded" : "collapsed"}`}>
           <button 
@@ -563,22 +566,18 @@ const MapComponent = () => {
                     style={{marginTop: 6, fontSize: 13, padding: "4px 8px"}}
                     onClick={() => {
                       setPuntosParada(prev => {
-                        const nombreLugar =
-                          (estacionSeleccionada.displayName && typeof estacionSeleccionada.displayName === "object" && estacionSeleccionada.displayName.text) ||
-                          (typeof estacionSeleccionada.displayName === "string" && estacionSeleccionada.displayName) ||
-                          (estacionSeleccionada.esHospedaje ? "Hospedaje" : "Estación de servicio");
-                        // Si es hospedaje, agregalo al final
                         if (estacionSeleccionada.esHospedaje) {
                           return [
                             ...prev,
                             {
                               lat: estacionSeleccionada.location.lat,
                               lng: estacionSeleccionada.location.lng,
-                              nombre: nombreLugar
+                              nombre: "Hospedaje",
+                              esHospedaje: true
                             }
                           ];
                         }
-                        // Si es estación, reemplaza la más cercana
+                        // Estación: reemplaza la más cercana y fuerza el nombre "YPF"
                         let minIdx = 0;
                         let minDist = Infinity;
                         prev.forEach((p, idx) => {
@@ -590,9 +589,10 @@ const MapComponent = () => {
                         });
                         const nuevo = [...prev];
                         nuevo[minIdx] = {
+                          ...nuevo[minIdx],
                           lat: estacionSeleccionada.location.lat,
                           lng: estacionSeleccionada.location.lng,
-                          nombre: nombreLugar
+                          nombre: "YPF" // <-- Forzado para visualización
                         };
                         return nuevo;
                       });

@@ -27,9 +27,20 @@ const Footer = () => {
     });
   };
 
+  const roadTripImg = import.meta.env.BASE_URL + 'RoadTrip.webp';
+
   return (
     <footer className="footer">
-      <div className="contact-section">
+      <div className="footer-top-section" id="about">
+        <div className="footer-top-text">
+          <h3>El equipo de RoadPlan lo componen jóvenes profesionales con ganas de brindar una herramienta útil para la comunidad</h3>
+          <p>No dudes en contactarnos.</p>
+        </div>
+        <div className="footer-top-image-box">
+          <img src={roadTripImg} alt="Road Trip" className="footer-top-image" />
+        </div>
+      </div>
+      <div className="contact-section" id="contacto">
         <h2>Contacto</h2>
         <form className="contact-form" onSubmit={handleSubmit}>
           <div className="form-group">

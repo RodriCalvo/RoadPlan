@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { GoogleMap, LoadScript, DirectionsRenderer, InfoWindow } from "@react-google-maps/api";
 import Header from "./Header";
 import "./MapComponent.css";
+import WeatherForecast from "./WeatherForecast";
 
 const containerStyle = {
   width: "100%",
@@ -606,6 +607,13 @@ const MapComponent = () => {
             )}
           </GoogleMap>
         </LoadScript>
+
+        {ruta && puntosParada.length > 0 && (
+          <WeatherForecast
+            puntosRuta={puntosParada}
+            fecha={new Date().toISOString().slice(0,10)}
+          />
+        )}
       </div>
     </div>
   );
@@ -633,7 +641,7 @@ async function buscarLugaresCercanos(punto, tipo = "gas_station", radio = 5000) 
 }
 
 // Buscar estaciones cercanas usando la nueva API de Places
-async function buscarEstacionesCercanas(punto, radio = 30000) {
+async function buscarEstacionesCercanas(punto, radio = 8000) {
   const { Place, SearchNearbyRankPreference } = await window.google.maps.importLibrary("places");
   const request = {
     fields: ["displayName", "location", "businessStatus"],

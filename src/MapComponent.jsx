@@ -39,6 +39,8 @@ const MapComponent = () => {
   const [estacionesCercanas, setEstacionesCercanas] = useState([]);
   const [estacionSeleccionada, setEstacionSeleccionada] = useState(null);
   const [hospedajesCercanos, setHospedajesCercanos] = useState([]);
+  const [fechaViaje, setFechaViaje] = useState("");
+  const [iconoClima, setIconoClima] = useState(null);
 
   // Limpia los marcadores clásicos anteriores
   useEffect(() => {
@@ -380,14 +382,16 @@ const MapComponent = () => {
   }, [puntosParada]);
 
   useEffect(() => {
-    if (!deseaDormir || !window.google || !puntosParada.length) {
+    if (!deseaDormir || !window.google) {
       setHospedajesCercanos([]);
       return;
     }
 
     async function buscarTodosHospedajes() {
       let todos = [];
-      for (const punto of puntosParada) {
+      // Si hay puntos de parada, busca en cada uno; si no, busca en la ubicación actual
+      const puntosBusqueda = puntosParada.length ? puntosParada : [ubicacionActual].filter(Boolean);
+      for (const punto of puntosBusqueda) {
         const results = await buscarLugaresCercanos(punto, "lodging", 8000);
         todos = todos.concat(results);
       }
@@ -395,7 +399,23 @@ const MapComponent = () => {
     }
 
     buscarTodosHospedajes();
-  }, [deseaDormir, puntosParada]);
+  }, [deseaDormir, puntosParada, ubicacionActual]);
+
+  useEffect(() => {
+    if (!fechaViaje || !ubicacionActual) {
+      setIconoClima(null);
+      return;
+    }
+
+    async function fetchClima() {
+      const apiKey = "AIzaSyCC3AO9wWo39j38UP4cAJ5ZF1Hyjf4clOo";
+      const result = await obtenerClimaGoogleWeatherAPI(ubicacionActual, fechaViaje, apiKey);
+      setIconoClima(result.icon);
+      // Si quieres mostrar descripción, guarda result.description
+    }
+
+    fetchClima();
+  }, [fechaViaje, ubicacionActual]);
 
   return (
     <div className="map-container">
@@ -420,6 +440,7 @@ const MapComponent = () => {
   <span className="flecha-viaje">→</span>
   <span className="origen-destino-label">Destino:</span>
   <span>{nombreDestino || (destino ? `${destino.lat.toFixed(5)}, ${destino.lng.toFixed(5)}` : "No seleccionado")}</span>
+  {fechaViaje && <span className="icono-clima">{iconoClima}</span>}
 </div>
 
         <div className={`controls-panel ${isPanelExpanded ? "expanded" : "collapsed"}`}>
@@ -494,6 +515,15 @@ const MapComponent = () => {
                   </button>
                 </div>
               </div>
+              <div className="clima-group">
+  <div className="clima-seleccione">Seleccione fecha</div>
+  <input
+    type="date"
+    value={fechaViaje}
+    onChange={e => setFechaViaje(e.target.value)}
+    className="clima-input"
+  />
+</div>
               <button
                 className="calcular-btn"
                 onClick={handleCalcularRuta}
@@ -614,26 +644,7 @@ const MapComponent = () => {
 export default MapComponent;
 
 // Buscar estaciones cercanas usando la nueva API de Places
-async function buscarLugaresCercanos(punto, tipo = "gas_station", radio = 5000) {
-  const { Place, SearchNearbyRankPreference } = await window.google.maps.importLibrary("places");
-  const request = {
-    fields: ["displayName", "location", "businessStatus"], // <-- corregido
-    locationRestriction: {
-      center: punto,
-      radius: radio,
-    },
-    includedPrimaryTypes: [tipo],
-    maxResultCount: 5,
-    rankPreference: SearchNearbyRankPreference.POPULARITY,
-    language: "es-419",
-    region: "ar",
-  };
-  const { places } = await Place.searchNearby(request);
-  return places || [];
-}
-
-// Buscar estaciones cercanas usando la nueva API de Places
-async function buscarEstacionesCercanas(punto, radio = 30000) {
+async function buscarLugaresCercanos(punto, tipo = "gas_station", radio = 8000) {
   const { Place, SearchNearbyRankPreference } = await window.google.maps.importLibrary("places");
   const request = {
     fields: ["displayName", "location", "businessStatus"],
@@ -641,12 +652,86 @@ async function buscarEstacionesCercanas(punto, radio = 30000) {
       center: punto,
       radius: radio,
     },
-    includedPrimaryTypes: ["gas_station"],
-    maxResultCount: 5,
+    includedPrimaryTypes: [tipo],
+    maxResultCount: 8,
     rankPreference: SearchNearbyRankPreference.POPULARITY,
     language: "es-419",
     region: "ar",
   };
+
   const { places } = await Place.searchNearby(request);
-  return places || [];
+  return (places || []).map(r => ({
+    displayName: r.displayName,
+    location: r.location,
+    businessStatus: r.businessStatus,
+    esHospedaje: tipo === "lodging",
+  }));
+}
+
+// Buscar estaciones cercanas usando la API clásica (fallback)
+async function buscarEstacionesCercanas(punto) {
+  const request = {
+    location: punto,
+    radius: 5000,
+    types: ["gas_station"],
+  };
+
+  return new Promise((resolve, reject) => {
+    const service = new window.google.maps.places.PlacesService(document.createElement('div'));
+    service.nearbySearch(request, (results, status) => {
+      if (status === window.google.maps.places.PlacesServiceStatus.OK) {
+        resolve(results.map(r => ({
+          displayName: r.name,
+          location: {
+            lat: r.geometry.location.lat(),
+            lng: r.geometry.location.lng(),
+          },
+          businessStatus: r.business_status,
+        })));
+      } else {
+        resolve([]);
+      }
+    });
+  });
+}
+
+// Obtener clima de Google Weather API
+async function obtenerClimaGoogleWeatherAPI({ lat, lng }, fechaISO, apiKey) {
+  // Convierte la fecha a año, mes, día
+  const fecha = new Date(fechaISO);
+  const year = fecha.getFullYear();
+  const month = fecha.getMonth() + 1;
+  const day = fecha.getDate();
+
+  // Solicita 7 días para asegurar que esté el día seleccionado
+  const url = `https://weather.googleapis.com/v1/forecast/days:lookup?key=${apiKey}&location.latitude=${lat}&location.longitude=${lng}&days=7`;
+
+  const resp = await fetch(url);
+  const data = await resp.json();
+
+  // Busca el día exacto
+  const forecastDay = data.forecastDays.find(fd =>
+    fd.displayDate.year === year &&
+    fd.displayDate.month === month &&
+    fd.displayDate.day === day
+  );
+
+  if (!forecastDay) return { icon: "❓", description: "Sin datos" };
+
+  // Usamos el pronóstico diurno
+  const daytime = forecastDay.daytimeForecast;
+  const conditionType = daytime.weatherCondition.type;
+  const precip = daytime.precipitation?.probability?.percent || 0;
+
+  // Lógica de iconos y descripción
+  if (precip >= 60 || conditionType.includes("RAIN") || conditionType.includes("SHOWERS") || conditionType.includes("STORM")) {
+    return { icon: "🌧️", description: "Lluvia" };
+  }
+  if (conditionType.includes("CLOUDY") || conditionType.includes("OVERCAST")) {
+    return { icon: "☁️", description: "Nublado" };
+  }
+  if (conditionType.includes("SUNNY") || conditionType.includes("CLEAR")) {
+    return { icon: "☀️", description: "Soleado" };
+  }
+  return { icon: "☀️", description: daytime.weatherCondition.description?.text || "Soleado" };
 }

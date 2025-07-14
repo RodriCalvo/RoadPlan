@@ -670,29 +670,17 @@ async function buscarLugaresCercanos(punto, tipo = "gas_station", radio = 8000) 
 
 // Buscar estaciones cercanas usando la API clásica (fallback)
 async function buscarEstacionesCercanas(punto) {
-  const request = {
-    location: punto,
-    radius: 5000,
-    types: ["gas_station"],
-  };
+  let results = await buscarLugaresCercanos(punto, "gas_station", 20000);
+  if (results.length > 0) return results;
 
-  return new Promise((resolve, reject) => {
-    const service = new window.google.maps.places.PlacesService(document.createElement('div'));
-    service.nearbySearch(request, (results, status) => {
-      if (status === window.google.maps.places.PlacesServiceStatus.OK) {
-        resolve(results.map(r => ({
-          displayName: r.name,
-          location: {
-            lat: r.geometry.location.lat(),
-            lng: r.geometry.location.lng(),
-          },
-          businessStatus: r.business_status,
-        })));
-      } else {
-        resolve([]);
-      }
-    });
-  });
+  results = await buscarLugaresCercanos(punto, "gas_station", 30000);
+  if (results.length > 0) return results;
+
+  results = await buscarLugaresCercanos(punto, "gas_station", 50000);
+  if (results.length > 0) return results;
+
+  // Si aún no hay resultados, muestra aviso
+  return [];
 }
 
 // Obtener clima de Google Weather API
